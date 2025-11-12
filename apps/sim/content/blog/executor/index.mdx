@@ -36,7 +36,7 @@ At its heart, the executor figures out which blocks can run, runs them, then rep
 
 Before execution starts, we compile the visual workflow into a directed acyclic graph (DAG). Every block becomes a node and every connection becomes an edge. Loops and parallel subflows expand into more complex structures (sentinel nodes for loops, branch-indexed nodes for parallels) that preserve the DAG property while enabling iteration and concurrency.
 
-This upfront compilation pays off immediately: the entire topology is concrete before the first block ever executes.
+This upfront compilation pays off immediately: the entire topology is concretely defined before the first block ever executes.
 
 ### The Execution Queue
 
