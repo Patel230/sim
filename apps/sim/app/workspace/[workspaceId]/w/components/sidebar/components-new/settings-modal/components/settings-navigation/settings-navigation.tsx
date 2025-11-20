@@ -194,13 +194,7 @@ export function SettingsNavigation({
         return false
       }
 
-      if (item.requiresTeam) {
-        const isMember = userRole === 'member' || isAdmin
-        const hasTeamPlan = subscriptionStatus.isTeam || subscriptionStatus.isEnterprise
-
-        if (isMember) return true
-        if (isOwner && hasTeamPlan) return true
-
+      if (item.requiresTeam && !hasOrganization) {
         return false
       }
 

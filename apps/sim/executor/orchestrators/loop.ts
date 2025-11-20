@@ -23,6 +23,7 @@ export interface LoopContinuationResult {
   shouldExit: boolean
   selectedRoute: LoopRoute
   aggregatedResults?: NormalizedBlockOutput[][]
+  currentIteration?: number
 }
 
 export class LoopOrchestrator {
@@ -148,6 +149,7 @@ export class LoopOrchestrator {
       shouldContinue: true,
       shouldExit: false,
       selectedRoute: EDGE.LOOP_CONTINUE,
+      currentIteration: scope.iteration,
     }
   }
 
@@ -164,6 +166,7 @@ export class LoopOrchestrator {
       shouldExit: true,
       selectedRoute: EDGE.LOOP_EXIT,
       aggregatedResults: results,
+      currentIteration: scope.iteration,
     }
   }
 

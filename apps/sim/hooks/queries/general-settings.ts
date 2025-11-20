@@ -25,7 +25,6 @@ export interface GeneralSettings {
   theme: 'light' | 'dark' | 'system'
   telemetryEnabled: boolean
   billingUsageNotificationsEnabled: boolean
-  errorNotificationsEnabled: boolean
 }
 
 /**
@@ -50,7 +49,6 @@ async function fetchGeneralSettings(): Promise<GeneralSettings> {
     theme: data.theme || 'system',
     telemetryEnabled: data.telemetryEnabled ?? true,
     billingUsageNotificationsEnabled: data.billingUsageNotificationsEnabled ?? true,
-    errorNotificationsEnabled: data.errorNotificationsEnabled ?? true,
   }
 }
 
@@ -71,7 +69,6 @@ function syncSettingsToZustand(settings: GeneralSettings) {
     theme: settings.theme,
     telemetryEnabled: settings.telemetryEnabled,
     isBillingUsageNotificationsEnabled: settings.billingUsageNotificationsEnabled,
-    isErrorNotificationsEnabled: settings.errorNotificationsEnabled,
   })
 }
 
@@ -121,12 +118,15 @@ export function useUpdateGeneralSetting() {
       return response.json()
     },
     onMutate: async ({ key, value }) => {
+      // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: generalSettingsKeys.settings() })
 
+      // Snapshot the previous value
       const previousSettings = queryClient.getQueryData<GeneralSettings>(
         generalSettingsKeys.settings()
       )
 
+      // Optimistically update to the new value
       if (previousSettings) {
         const newSettings = {
           ...previousSettings,
@@ -134,20 +134,25 @@ export function useUpdateGeneralSetting() {
         }
         queryClient.setQueryData<GeneralSettings>(generalSettingsKeys.settings(), newSettings)
 
+        // Immediately sync to Zustand for optimistic update throughout the app
         syncSettingsToZustand(newSettings)
       }
 
       return { previousSettings }
     },
     onError: (err, _variables, context) => {
+      // Rollback on error
       if (context?.previousSettings) {
         queryClient.setQueryData(generalSettingsKeys.settings(), context.previousSettings)
+        // Also rollback Zustand store
         syncSettingsToZustand(context.previousSettings)
       }
       logger.error('Failed to update setting:', err)
     },
     onSuccess: (_data, _variables, _context) => {
+      // Invalidate to ensure we have the latest from server
       queryClient.invalidateQueries({ queryKey: generalSettingsKeys.settings() })
+      // Sync will happen automatically when the query refetches in useGeneralSettings hook
     },
   })
 }

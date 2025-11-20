@@ -1,5 +1,4 @@
 import { useCallback, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 import { v4 as uuidv4 } from 'uuid'
 import { shallow } from 'zustand/shallow'
 import { createLogger } from '@/lib/logs/console/logger'
@@ -12,7 +11,6 @@ import {
 } from '@/lib/workflows/trigger-utils'
 import { resolveStartCandidates, StartBlockPath, TriggerUtils } from '@/lib/workflows/triggers'
 import type { BlockLog, ExecutionResult, StreamingExecution } from '@/executor/types'
-import { subscriptionKeys } from '@/hooks/queries/subscription'
 import { useExecutionStream } from '@/hooks/use-execution-stream'
 import { WorkflowValidationError } from '@/serializer'
 import { useExecutionStore } from '@/stores/execution/store'
@@ -86,7 +84,6 @@ function extractExecutionResult(error: unknown): ExecutionResult | null {
 export function useWorkflowExecution() {
   const currentWorkflow = useCurrentWorkflow()
   const { activeWorkflowId, workflows } = useWorkflowRegistry()
-  const queryClient = useQueryClient()
   const { toggleConsole, addConsole } = useTerminalConsoleStore()
   const { getAllVariables } = useEnvironmentStore()
   const { getVariablesByWorkflowId, variables } = useVariablesStore()
@@ -419,7 +416,7 @@ export function useWorkflowExecution() {
                 if (!streamingExecution.stream) return
                 const reader = streamingExecution.stream.getReader()
                 const blockId = (streamingExecution.execution as any)?.blockId
-
+                const streamStartTime = Date.now()
                 let isFirstChunk = true
 
                 if (blockId) {
@@ -580,10 +577,6 @@ export function useWorkflowExecution() {
                   logger.info(`Processed ${processedCount} blocks for streaming tokenization`)
                 }
 
-                // Invalidate subscription query to update usage
-                queryClient.invalidateQueries({ queryKey: subscriptionKeys.user() })
-                queryClient.invalidateQueries({ queryKey: subscriptionKeys.usage() })
-
                 const { encodeSSE } = await import('@/lib/utils')
                 controller.enqueue(encodeSSE({ event: 'final', data: result }))
                 // Note: Logs are already persisted server-side via execution-core.ts
@@ -646,10 +639,6 @@ export function useWorkflowExecution() {
             }
             ;(result.metadata as any).source = 'chat'
           }
-
-          // Invalidate subscription query to update usage
-          queryClient.invalidateQueries({ queryKey: subscriptionKeys.user() })
-          queryClient.invalidateQueries({ queryKey: subscriptionKeys.usage() })
         }
         return result
       } catch (error: any) {

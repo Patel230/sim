@@ -577,6 +577,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           if (isStreamClosed) return
 
           try {
+            logger.info(`[${requestId}] 📤 Sending SSE event:`, {
+              type: event.type,
+              data: event.data,
+            })
             controller.enqueue(encodeSSEEvent(event))
           } catch {
             isStreamClosed = true

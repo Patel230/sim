@@ -3,16 +3,7 @@
 import { useState } from 'react'
 import { AlertCircle, Plus, Search } from 'lucide-react'
 import { useParams } from 'next/navigation'
-import {
-  Button,
-  Label,
-  Modal,
-  ModalContent,
-  ModalDescription,
-  ModalFooter,
-  ModalHeader,
-  ModalTitle,
-} from '@/components/emcn'
+import { Button, Label } from '@/components/emcn'
 import { Alert, AlertDescription, Input, Skeleton } from '@/components/ui'
 import { createLogger } from '@/lib/logs/console/logger'
 import { CustomToolModal } from '@/app/workspace/[workspaceId]/w/[workflowId]/components/panel-new/components/editor/components/sub-block/components/tool-input/components/custom-tool-modal/custom-tool-modal'
@@ -50,8 +41,6 @@ export function CustomTools() {
   const [deletingTools, setDeletingTools] = useState<Set<string>>(new Set())
   const [editingTool, setEditingTool] = useState<string | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
-  const [toolToDelete, setToolToDelete] = useState<{ id: string; name: string } | null>(null)
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   const filteredTools = tools.filter((tool) => {
     if (!searchTerm.trim()) return true
@@ -63,42 +52,26 @@ export function CustomTools() {
     )
   })
 
-  const handleDeleteClick = (toolId: string) => {
+  const handleDeleteTool = async (toolId: string) => {
     const tool = tools.find((t) => t.id === toolId)
     if (!tool) return
 
-    setToolToDelete({
-      id: toolId,
-      name: tool.title || tool.schema?.function?.name || 'this custom tool',
-    })
-    setShowDeleteDialog(true)
-  }
-
-  const handleDeleteTool = async () => {
-    if (!toolToDelete) return
-
-    const tool = tools.find((t) => t.id === toolToDelete.id)
-    if (!tool) return
-
-    setDeletingTools((prev) => new Set(prev).add(toolToDelete.id))
-    setShowDeleteDialog(false)
-
+    setDeletingTools((prev) => new Set(prev).add(toolId))
     try {
       // Pass null workspaceId for user-scoped tools (legacy tools without workspaceId)
       await deleteToolMutation.mutateAsync({
         workspaceId: tool.workspaceId ?? null,
-        toolId: toolToDelete.id,
+        toolId,
       })
-      logger.info(`Deleted custom tool: ${toolToDelete.id}`)
+      logger.info(`Deleted custom tool: ${toolId}`)
     } catch (error) {
       logger.error('Error deleting custom tool:', error)
     } finally {
       setDeletingTools((prev) => {
         const next = new Set(prev)
-        next.delete(toolToDelete.id)
+        next.delete(toolId)
         return next
       })
-      setToolToDelete(null)
     }
   }
 
@@ -183,7 +156,7 @@ export function CustomTools() {
                         </Button>
                         <Button
                           variant='ghost'
-                          onClick={() => handleDeleteClick(tool.id)}
+                          onClick={() => handleDeleteTool(tool.id)}
                           disabled={deletingTools.has(tool.id)}
                           className='h-8'
                         >
@@ -256,42 +229,6 @@ export function CustomTools() {
             : undefined
         }
       />
-
-      {/* Delete Confirmation Dialog */}
-      <Modal open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <ModalContent>
-          <ModalHeader>
-            <ModalTitle>Delete custom tool?</ModalTitle>
-            <ModalDescription>
-              Deleting "{toolToDelete?.name}" will permanently remove this custom tool from your
-              workspace.{' '}
-              <span className='text-[var(--text-error)] dark:text-[var(--text-error)]'>
-                This action cannot be undone.
-              </span>
-            </ModalDescription>
-          </ModalHeader>
-          <ModalFooter>
-            <Button
-              className='h-[32px] px-[12px]'
-              variant='outline'
-              onClick={() => {
-                setShowDeleteDialog(false)
-                setToolToDelete(null)
-              }}
-              disabled={deleteToolMutation.isPending}
-            >
-              Cancel
-            </Button>
-            <Button
-              className='h-[32px] bg-[var(--text-error)] px-[12px] text-[var(--white)] hover:bg-[var(--text-error)] hover:text-[var(--white)] dark:bg-[var(--text-error)] dark:text-[var(--white)] hover:dark:bg-[var(--text-error)] dark:hover:text-[var(--white)]'
-              onClick={handleDeleteTool}
-              disabled={deleteToolMutation.isPending}
-            >
-              {deleteToolMutation.isPending ? 'Deleting...' : 'Delete'}
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
     </div>
   )
 }

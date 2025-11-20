@@ -1,6 +1,7 @@
 import * as Icons from '@/components/icons'
 import { inter } from '@/app/fonts/inter/inter'
 
+// AI models and providers
 const modelProviderIcons = [
   { icon: Icons.OpenAIIcon, label: 'OpenAI' },
   { icon: Icons.AnthropicIcon, label: 'Anthropic' },
@@ -15,6 +16,7 @@ const modelProviderIcons = [
   { icon: Icons.ElevenLabsIcon, label: 'ElevenLabs' },
 ]
 
+// Communication and productivity tools
 const communicationIcons = [
   { icon: Icons.SlackIcon, label: 'Slack' },
   { icon: Icons.GmailIcon, label: 'Gmail' },
@@ -26,7 +28,6 @@ const communicationIcons = [
   { icon: Icons.ConfluenceIcon, label: 'Confluence' },
   { icon: Icons.TelegramIcon, label: 'Telegram' },
   { icon: Icons.GoogleCalendarIcon, label: 'Google Calendar' },
-  { icon: Icons.CalendlyIcon, label: 'Calendly' },
   { icon: Icons.GoogleDocsIcon, label: 'Google Docs' },
   { icon: Icons.BrowserUseIcon, label: 'BrowserUse' },
   { icon: Icons.TypeformIcon, label: 'Typeform' },
@@ -36,6 +37,7 @@ const communicationIcons = [
   { icon: Icons.AirtableIcon, label: 'Airtable' },
 ]
 
+// Data, storage and search services
 const dataStorageIcons = [
   { icon: Icons.PineconeIcon, label: 'Pinecone' },
   { icon: Icons.SupabaseIcon, label: 'Supabase' },

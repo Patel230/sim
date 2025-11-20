@@ -11,6 +11,7 @@ export const memoryGetAllTool: ToolConfig<any, MemoryResponse> = {
 
   request: {
     url: (params): any => {
+      // Get workflowId from context (set by workflow execution)
       const workflowId = params._context?.workflowId
 
       if (!workflowId) {
@@ -27,6 +28,7 @@ export const memoryGetAllTool: ToolConfig<any, MemoryResponse> = {
         }
       }
 
+      // Append workflowId as query parameter
       return `/api/memory?workflowId=${encodeURIComponent(workflowId)}`
     },
     method: 'GET',
@@ -38,24 +40,22 @@ export const memoryGetAllTool: ToolConfig<any, MemoryResponse> = {
   transformResponse: async (response): Promise<MemoryResponse> => {
     const result = await response.json()
 
+    // Extract memories from the response
     const data = result.data || result
-    const memories = data.memories || data || []
+    const rawMemories = data.memories || data || []
 
-    if (!Array.isArray(memories) || memories.length === 0) {
-      return {
-        success: true,
-        output: {
-          memories: [],
-          message: 'No memories found',
-        },
-      }
-    }
+    // Transform memories to return them with their keys and types for better context
+    const memories = rawMemories.map((memory: any) => ({
+      key: memory.key,
+      type: memory.type,
+      data: memory.data,
+    }))
 
     return {
       success: true,
       output: {
         memories,
-        message: `Found ${memories.length} memories`,
+        message: 'Memories retrieved successfully',
       },
     }
   },
@@ -64,8 +64,7 @@ export const memoryGetAllTool: ToolConfig<any, MemoryResponse> = {
     success: { type: 'boolean', description: 'Whether all memories were retrieved successfully' },
     memories: {
       type: 'array',
-      description:
-        'Array of all memory objects with key, conversationId, blockId, blockName, and data fields',
+      description: 'Array of all memory objects with keys, types, and data',
     },
     message: { type: 'string', description: 'Success or error message' },
     error: { type: 'string', description: 'Error message if operation failed' },

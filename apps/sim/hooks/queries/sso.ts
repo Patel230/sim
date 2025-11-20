@@ -22,6 +22,7 @@ async function fetchSSOProviders() {
 
 /**
  * Hook to fetch SSO providers
+ * Cache for 5 minutes since SSO config rarely changes
  */
 export function useSSOProviders() {
   return useQuery({
@@ -62,8 +63,10 @@ export function useConfigureSSO() {
       return response.json()
     },
     onSuccess: (_data, variables) => {
+      // Invalidate SSO providers list
       queryClient.invalidateQueries({ queryKey: ssoKeys.providers() })
 
+      // Also invalidate organization data if org context
       if (variables.orgId) {
         queryClient.invalidateQueries({
           queryKey: organizationKeys.detail(variables.orgId),
@@ -101,8 +104,10 @@ export function useDeleteSSO() {
       return response.json()
     },
     onSuccess: (_data, variables) => {
+      // Invalidate SSO providers list
       queryClient.invalidateQueries({ queryKey: ssoKeys.providers() })
 
+      // Also invalidate organization data if org context
       if (variables.orgId) {
         queryClient.invalidateQueries({
           queryKey: organizationKeys.detail(variables.orgId),

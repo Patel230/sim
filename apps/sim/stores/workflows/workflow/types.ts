@@ -100,6 +100,7 @@ export interface LoopBlock {
   width: number
   height: number
   executionState: {
+    currentIteration: number
     isExecuting: boolean
     startTime: null | number
     endTime: null | number
@@ -197,13 +198,7 @@ export interface WorkflowActions {
   toggleBlockEnabled: (id: string) => void
   duplicateBlock: (id: string) => void
   toggleBlockHandles: (id: string) => void
-  updateBlockName: (
-    id: string,
-    name: string
-  ) => {
-    success: boolean
-    changedSubblocks: Array<{ blockId: string; subBlockId: string; newValue: any }>
-  }
+  updateBlockName: (id: string, name: string) => boolean
   setBlockAdvancedMode: (id: string, advancedMode: boolean) => void
   setBlockTriggerMode: (id: string, triggerMode: boolean) => void
   updateBlockLayoutMetrics: (id: string, dimensions: { width: number; height: number }) => void

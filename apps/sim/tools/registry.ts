@@ -41,18 +41,6 @@ import {
   asanaUpdateTaskTool,
 } from '@/tools/asana'
 import { browserUseRunTaskTool } from '@/tools/browser_use'
-import {
-  calendlyCancelEventTool,
-  calendlyCreateWebhookTool,
-  calendlyDeleteWebhookTool,
-  calendlyGetCurrentUserTool,
-  calendlyGetEventTypeTool,
-  calendlyGetScheduledEventTool,
-  calendlyListEventInviteesTool,
-  calendlyListEventTypesTool,
-  calendlyListScheduledEventsTool,
-  calendlyListWebhooksTool,
-} from '@/tools/calendly'
 import { clayPopulateTool } from '@/tools/clay'
 import {
   confluenceCreateCommentTool,
@@ -360,7 +348,6 @@ import { memoryAddTool, memoryDeleteTool, memoryGetAllTool, memoryGetTool } from
 import {
   microsoftExcelReadTool,
   microsoftExcelTableAddTool,
-  microsoftExcelWorksheetAddTool,
   microsoftExcelWriteTool,
 } from '@/tools/microsoft_excel'
 import {
@@ -409,14 +396,6 @@ import {
   queryTool as mysqlQueryTool,
   updateTool as mysqlUpdateTool,
 } from '@/tools/mysql'
-import {
-  createTool as neo4jCreateTool,
-  deleteTool as neo4jDeleteTool,
-  executeTool as neo4jExecuteTool,
-  mergeTool as neo4jMergeTool,
-  queryTool as neo4jQueryTool,
-  updateTool as neo4jUpdateTool,
-} from '@/tools/neo4j'
 import {
   notionCreateDatabaseTool,
   notionCreatePageTool,
@@ -794,16 +773,6 @@ export const tools: Record<string, ToolConfig> = {
   supabase_storage_delete_bucket: supabaseStorageDeleteBucketTool,
   supabase_storage_get_public_url: supabaseStorageGetPublicUrlTool,
   supabase_storage_create_signed_url: supabaseStorageCreateSignedUrlTool,
-  calendly_get_current_user: calendlyGetCurrentUserTool,
-  calendly_list_event_types: calendlyListEventTypesTool,
-  calendly_get_event_type: calendlyGetEventTypeTool,
-  calendly_list_scheduled_events: calendlyListScheduledEventsTool,
-  calendly_get_scheduled_event: calendlyGetScheduledEventTool,
-  calendly_list_event_invitees: calendlyListEventInviteesTool,
-  calendly_cancel_event: calendlyCancelEventTool,
-  calendly_list_webhooks: calendlyListWebhooksTool,
-  calendly_create_webhook: calendlyCreateWebhookTool,
-  calendly_delete_webhook: calendlyDeleteWebhookTool,
   typeform_responses: typeformResponsesTool,
   typeform_files: typeformFilesTool,
   typeform_insights: typeformInsightsTool,
@@ -882,12 +851,6 @@ export const tools: Record<string, ToolConfig> = {
   mysql_update: mysqlUpdateTool,
   mysql_delete: mysqlDeleteTool,
   mysql_execute: mysqlExecuteTool,
-  neo4j_query: neo4jQueryTool,
-  neo4j_create: neo4jCreateTool,
-  neo4j_merge: neo4jMergeTool,
-  neo4j_update: neo4jUpdateTool,
-  neo4j_delete: neo4jDeleteTool,
-  neo4j_execute: neo4jExecuteTool,
   github_pr: githubPrTool,
   github_comment: githubCommentTool,
   github_issue_comment: githubIssueCommentTool,
@@ -1209,7 +1172,6 @@ export const tools: Record<string, ToolConfig> = {
   microsoft_excel_read: microsoftExcelReadTool,
   microsoft_excel_write: microsoftExcelWriteTool,
   microsoft_excel_table_add: microsoftExcelTableAddTool,
-  microsoft_excel_worksheet_add: microsoftExcelWorksheetAddTool,
   microsoft_planner_create_task: microsoftPlannerCreateTaskTool,
   microsoft_planner_read_task: microsoftPlannerReadTaskTool,
   microsoft_planner_update_task: microsoftPlannerUpdateTaskTool,

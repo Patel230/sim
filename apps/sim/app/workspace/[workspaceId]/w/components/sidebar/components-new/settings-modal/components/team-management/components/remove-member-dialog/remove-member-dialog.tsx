@@ -1,12 +1,12 @@
+import { Button } from '@/components/ui/button'
 import {
-  Button,
-  Modal,
-  ModalContent,
-  ModalDescription,
-  ModalFooter,
-  ModalHeader,
-  ModalTitle,
-} from '@/components/emcn'
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 interface RemoveMemberDialogProps {
   open: boolean
@@ -30,19 +30,17 @@ export function RemoveMemberDialog({
   isSelfRemoval = false,
 }: RemoveMemberDialogProps) {
   return (
-    <Modal open={open} onOpenChange={onOpenChange}>
-      <ModalContent>
-        <ModalHeader>
-          <ModalTitle>{isSelfRemoval ? 'Leave Organization' : 'Remove Team Member'}</ModalTitle>
-          <ModalDescription>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{isSelfRemoval ? 'Leave Organization' : 'Remove Team Member'}</DialogTitle>
+          <DialogDescription>
             {isSelfRemoval
               ? 'Are you sure you want to leave this organization? You will lose access to all team resources.'
               : `Are you sure you want to remove ${memberName} from the team?`}{' '}
-            <span className='text-[var(--text-error)] dark:text-[var(--text-error)]'>
-              This action cannot be undone.
-            </span>
-          </ModalDescription>
-        </ModalHeader>
+            <span className='text-red-500 dark:text-red-500'>This action cannot be undone.</span>
+          </DialogDescription>
+        </DialogHeader>
 
         {!isSelfRemoval && (
           <div className='py-4'>
@@ -64,18 +62,19 @@ export function RemoveMemberDialog({
           </div>
         )}
 
-        <ModalFooter>
-          <Button variant='outline' onClick={onCancel} className='h-[32px] px-[12px]'>
+        <DialogFooter>
+          <Button variant='outline' onClick={onCancel} className='h-9 rounded-[8px]'>
             Cancel
           </Button>
           <Button
+            variant='destructive'
             onClick={() => onConfirmRemove(shouldReduceSeats)}
-            className='h-[32px] bg-[var(--text-error)] px-[12px] text-[var(--white)] hover:bg-[var(--text-error)] hover:text-[var(--white)] dark:bg-[var(--text-error)] dark:text-[var(--white)] hover:dark:bg-[var(--text-error)] dark:hover:text-[var(--white)]'
+            className='h-9 rounded-[8px] bg-red-500 text-white transition-all duration-200 hover:bg-red-600 dark:bg-red-500 dark:hover:bg-red-600'
           >
             {isSelfRemoval ? 'Leave Organization' : 'Remove'}
           </Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

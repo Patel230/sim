@@ -3,15 +3,6 @@
 import { useEffect, useState } from 'react'
 import { Eye, MoreHorizontal, Plus, Trash2, X } from 'lucide-react'
 import {
-  Button as EmcnButton,
-  Modal,
-  ModalContent,
-  ModalDescription,
-  ModalFooter,
-  ModalHeader,
-  ModalTitle,
-} from '@/components/emcn'
-import {
   Button,
   DropdownMenu,
   DropdownMenuContent,
@@ -27,8 +18,10 @@ import {
 } from '@/components/ui'
 import {
   AlertDialog,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
+  AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
@@ -448,17 +441,17 @@ export function KnowledgeBaseTags({ knowledgeBaseId }: KnowledgeBaseTagsProps) {
       </div>
 
       {/* Delete Confirmation Dialog */}
-      <Modal open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <ModalContent>
-          <ModalHeader>
-            <ModalTitle>Delete Tag</ModalTitle>
-            <ModalDescription asChild>
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Tag</AlertDialogTitle>
+            <AlertDialogDescription asChild>
               <div>
                 <div className='mb-2'>
                   Are you sure you want to delete the "{selectedTag?.displayName}" tag? This will
                   remove this tag from {selectedTagUsage?.documentCount || 0} document
                   {selectedTagUsage?.documentCount !== 1 ? 's' : ''}.{' '}
-                  <span className='text-[var(--text-error)] dark:text-[var(--text-error)]'>
+                  <span className='text-red-500 dark:text-red-500'>
                     This action cannot be undone.
                   </span>
                 </div>
@@ -474,27 +467,22 @@ export function KnowledgeBaseTags({ knowledgeBaseId }: KnowledgeBaseTagsProps) {
                   </div>
                 )}
               </div>
-            </ModalDescription>
-          </ModalHeader>
-          <ModalFooter>
-            <EmcnButton
-              variant='outline'
-              className='h-[32px] px-[12px]'
-              disabled={isDeleting}
-              onClick={() => setDeleteDialogOpen(false)}
-            >
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className='flex'>
+            <AlertDialogCancel className='h-9 w-full rounded-[8px]' disabled={isDeleting}>
               Cancel
-            </EmcnButton>
-            <EmcnButton
+            </AlertDialogCancel>
+            <Button
               onClick={confirmDeleteTag}
               disabled={isDeleting}
-              className='h-[32px] bg-[var(--text-error)] px-[12px] text-[var(--white)] hover:bg-[var(--text-error)] hover:text-[var(--white)] dark:bg-[var(--text-error)] dark:text-[var(--white)] hover:dark:bg-[var(--text-error)] dark:hover:text-[var(--white)]'
+              className='h-9 w-full rounded-[8px] bg-red-500 text-white transition-all duration-200 hover:bg-red-600 dark:bg-red-500 dark:hover:bg-red-600'
             >
               {isDeleting ? 'Deleting...' : 'Delete Tag'}
-            </EmcnButton>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* View Documents Dialog */}
       <AlertDialog open={viewDocumentsDialogOpen} onOpenChange={setViewDocumentsDialogOpen}>

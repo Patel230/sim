@@ -29,7 +29,6 @@ import {
   McpDynamicArgs,
   McpServerSelector,
   McpToolSelector,
-  MessagesInput,
   ProjectSelectorInput,
   ResponseFormat,
   ScheduleSave,
@@ -42,6 +41,7 @@ import {
   ToolInput,
   TriggerSave,
   VariablesInput,
+  WebhookConfig,
 } from './components'
 
 /**
@@ -589,6 +589,27 @@ function SubBlockComponent({
           />
         )
 
+      case 'webhook-config': {
+        const webhookValue =
+          isPreview && subBlockValues
+            ? {
+                webhookProvider: subBlockValues.webhookProvider?.value,
+                webhookPath: subBlockValues.webhookPath?.value,
+                providerConfig: subBlockValues.providerConfig?.value,
+              }
+            : previewValue
+
+        return (
+          <WebhookConfig
+            blockId={blockId}
+            subBlockId={config.id}
+            isPreview={isPreview}
+            value={webhookValue as any}
+            disabled={isDisabled}
+          />
+        )
+      }
+
       case 'schedule-save':
         return <ScheduleSave blockId={blockId} isPreview={isPreview} disabled={disabled} />
 
@@ -792,18 +813,6 @@ function SubBlockComponent({
             triggerId={config.triggerId}
             isPreview={isPreview}
             disabled={disabled}
-          />
-        )
-
-      case 'messages-input':
-        return (
-          <MessagesInput
-            blockId={blockId}
-            subBlockId={config.id}
-            config={config}
-            isPreview={isPreview}
-            previewValue={previewValue as any}
-            disabled={isDisabled}
           />
         )
 

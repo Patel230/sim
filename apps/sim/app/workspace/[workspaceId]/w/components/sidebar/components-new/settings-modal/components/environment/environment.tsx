@@ -3,17 +3,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Plus, Search, Share2 } from 'lucide-react'
 import { useParams } from 'next/navigation'
-import {
-  Button,
-  Modal,
-  ModalContent,
-  ModalDescription,
-  ModalFooter,
-  ModalHeader,
-  ModalTitle,
-  Tooltip,
-} from '@/components/emcn'
+import { Button, Tooltip } from '@/components/emcn'
 import { Input, Skeleton } from '@/components/ui'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { createLogger } from '@/lib/logs/console/logger'
 import {
   usePersonalEnvironment,
@@ -731,44 +732,46 @@ export function EnvironmentVariables({
         </div>
       </div>
 
-      <Modal open={showUnsavedChanges} onOpenChange={setShowUnsavedChanges}>
-        <ModalContent>
-          <ModalHeader>
-            <ModalTitle>Unsaved Changes</ModalTitle>
-            <ModalDescription>
+      <AlertDialog open={showUnsavedChanges} onOpenChange={setShowUnsavedChanges}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
+            <AlertDialogDescription>
               {hasConflicts
                 ? 'You have unsaved changes, but conflicts must be resolved before saving. You can discard your changes to close the modal.'
                 : 'You have unsaved changes. Do you want to save them before closing?'}
-            </ModalDescription>
-          </ModalHeader>
-          <ModalFooter>
-            <Button
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className='flex'>
+            <AlertDialogCancel
               onClick={handleCancel}
-              className='h-[32px] bg-[var(--text-error)] px-[12px] text-[var(--white)] hover:bg-[var(--text-error)] hover:text-[var(--white)] dark:bg-[var(--text-error)] dark:text-[var(--white)] hover:dark:bg-[var(--text-error)] dark:hover:text-[var(--white)]'
+              className='h-9 w-full rounded-[8px] bg-red-500 text-white transition-all duration-200 hover:bg-red-600 dark:bg-red-500 dark:hover:bg-red-600'
             >
               Discard Changes
-            </Button>
+            </AlertDialogCancel>
             {hasConflicts ? (
               <Tooltip.Root>
                 <Tooltip.Trigger asChild>
-                  <Button
+                  <AlertDialogAction
                     disabled={true}
-                    variant='primary'
-                    className='h-[32px] cursor-not-allowed px-[12px] opacity-50'
+                    className='h-9 w-full cursor-not-allowed rounded-[8px] bg-primary text-white opacity-50 transition-all duration-200'
                   >
                     Save Changes
-                  </Button>
+                  </AlertDialogAction>
                 </Tooltip.Trigger>
                 <Tooltip.Content>Resolve all conflicts before saving</Tooltip.Content>
               </Tooltip.Root>
             ) : (
-              <Button onClick={handleSave} variant='primary' className='h-[32px] px-[12px]'>
+              <AlertDialogAction
+                onClick={handleSave}
+                className='h-9 w-full rounded-[8px] bg-primary text-white transition-all duration-200 hover:bg-primary/90'
+              >
                 Save Changes
-              </Button>
+              </AlertDialogAction>
             )}
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

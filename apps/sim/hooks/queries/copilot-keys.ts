@@ -47,12 +47,13 @@ async function fetchCopilotKeys(): Promise<CopilotKey[]> {
 
 /**
  * Hook to fetch Copilot API keys
+ * Only fetches when in hosted environment
  */
 export function useCopilotKeys() {
   return useQuery({
     queryKey: copilotKeysKeys.keys(),
     queryFn: fetchCopilotKeys,
-    enabled: isHosted,
+    enabled: isHosted, // Only fetch in hosted environments
     staleTime: 30 * 1000, // 30 seconds
     placeholderData: keepPreviousData,
   })
@@ -81,9 +82,11 @@ export function useGenerateCopilotKey() {
       return response.json()
     },
     onSuccess: () => {
+      // Force refetch even if query is disabled (enabled: isHosted check)
+      // Using refetchQueries ensures it runs regardless of enabled state
       queryClient.refetchQueries({
         queryKey: copilotKeysKeys.keys(),
-        type: 'active',
+        type: 'active', // Only refetch if query is currently subscribed/active
       })
     },
     onError: (error) => {
@@ -116,10 +119,13 @@ export function useDeleteCopilotKey() {
       return response.json()
     },
     onMutate: async ({ keyId }) => {
+      // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: copilotKeysKeys.keys() })
 
+      // Snapshot the previous value
       const previousKeys = queryClient.getQueryData<CopilotKey[]>(copilotKeysKeys.keys())
 
+      // Optimistically remove the key from the list
       queryClient.setQueryData<CopilotKey[]>(copilotKeysKeys.keys(), (old) => {
         return old?.filter((k) => k.id !== keyId) || []
       })
@@ -127,12 +133,14 @@ export function useDeleteCopilotKey() {
       return { previousKeys }
     },
     onError: (error, _variables, context) => {
+      // Rollback to previous value on error
       if (context?.previousKeys) {
         queryClient.setQueryData(copilotKeysKeys.keys(), context.previousKeys)
       }
       logger.error('Failed to delete Copilot API key:', error)
     },
     onSettled: () => {
+      // Always refetch after error or success to ensure server state
       queryClient.invalidateQueries({ queryKey: copilotKeysKeys.keys() })
     },
   })

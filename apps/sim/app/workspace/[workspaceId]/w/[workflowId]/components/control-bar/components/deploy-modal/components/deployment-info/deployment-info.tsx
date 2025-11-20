@@ -3,15 +3,18 @@
 import { useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
   Button,
-  Modal,
-  ModalContent,
-  ModalDescription,
-  ModalFooter,
-  ModalHeader,
-  ModalTitle,
-} from '@/components/emcn'
-import { Skeleton } from '@/components/ui'
+  Skeleton,
+} from '@/components/ui'
 import {
   ApiEndpoint,
   DeployStatus,
@@ -61,7 +64,6 @@ export function DeploymentInfo({
   onLoadDeploymentComplete,
 }: DeploymentInfoProps) {
   const [isViewingDeployed, setIsViewingDeployed] = useState(false)
-  const [showUndeployModal, setShowUndeployModal] = useState(false)
 
   const handleViewDeployed = async () => {
     if (!workflowId) {
@@ -128,29 +130,41 @@ export function DeploymentInfo({
           <DeployStatus needsRedeployment={deploymentInfo.needsRedeployment} />
 
           <div className='flex gap-2'>
-            <Button variant='outline' onClick={handleViewDeployed} className='h-8 text-xs'>
+            <Button variant='outline' size='sm' onClick={handleViewDeployed}>
               View Deployment
             </Button>
             {deploymentInfo.needsRedeployment && (
-              <Button
-                variant='primary'
-                onClick={onRedeploy}
-                disabled={isSubmitting}
-                className='h-8 text-xs'
-              >
+              <Button variant='outline' size='sm' onClick={onRedeploy} disabled={isSubmitting}>
                 {isSubmitting ? <Loader2 className='mr-1.5 h-3.5 w-3.5 animate-spin' /> : null}
                 {isSubmitting ? 'Redeploying...' : 'Redeploy'}
               </Button>
             )}
-            <Button
-              variant='outline'
-              disabled={isUndeploying}
-              className='h-8 text-xs'
-              onClick={() => setShowUndeployModal(true)}
-            >
-              {isUndeploying ? <Loader2 className='mr-1.5 h-3.5 w-3.5 animate-spin' /> : null}
-              {isUndeploying ? 'Undeploying...' : 'Undeploy'}
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant='destructive' size='sm' disabled={isUndeploying}>
+                  {isUndeploying ? <Loader2 className='mr-1.5 h-3.5 w-3.5 animate-spin' /> : null}
+                  {isUndeploying ? 'Undeploying...' : 'Undeploy'}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Undeploy API</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to undeploy this workflow? This will remove the API
+                    endpoint and make it unavailable to external users.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={onUndeploy}
+                    className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                  >
+                    Undeploy
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </div>
@@ -165,41 +179,6 @@ export function DeploymentInfo({
           onLoadDeploymentComplete={onLoadDeploymentComplete}
         />
       )}
-
-      {/* Undeploy Confirmation Modal */}
-      <Modal open={showUndeployModal} onOpenChange={setShowUndeployModal}>
-        <ModalContent>
-          <ModalHeader>
-            <ModalTitle>Undeploy API</ModalTitle>
-            <ModalDescription>
-              Are you sure you want to undeploy this workflow?{' '}
-              <span className='text-[var(--text-error)] dark:text-[var(--text-error)]'>
-                This will remove the API endpoint and make it unavailable to external users.{' '}
-              </span>
-            </ModalDescription>
-          </ModalHeader>
-          <ModalFooter>
-            <Button
-              className='h-[32px] px-[12px]'
-              variant='outline'
-              onClick={() => setShowUndeployModal(false)}
-              disabled={isUndeploying}
-            >
-              Cancel
-            </Button>
-            <Button
-              className='h-[32px] bg-[var(--text-error)] px-[12px] text-[var(--white)] hover:bg-[var(--text-error)] hover:text-[var(--white)] dark:bg-[var(--text-error)] dark:text-[var(--white)] hover:dark:bg-[var(--text-error)] dark:hover:text-[var(--white)]'
-              onClick={() => {
-                onUndeploy()
-                setShowUndeployModal(false)
-              }}
-              disabled={isUndeploying}
-            >
-              {isUndeploying ? 'Undeploying...' : 'Undeploy'}
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
     </>
   )
 }

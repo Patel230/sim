@@ -3,7 +3,6 @@ import { createMcpToolId } from '@/lib/mcp/utils'
 import { getAllBlocks } from '@/blocks'
 import type { BlockOutput } from '@/blocks/types'
 import { AGENT, BlockType, DEFAULTS, HTTP } from '@/executor/consts'
-import { memoryService } from '@/executor/handlers/agent/memory'
 import type {
   AgentInputs,
   Message,
@@ -40,7 +39,7 @@ export class AgentBlockHandler implements BlockHandler {
     const providerId = getProviderFromModel(model)
     const formattedTools = await this.formatTools(ctx, inputs.tools || [])
     const streamingConfig = this.getStreamingConfig(ctx, block)
-    const messages = await this.buildMessages(ctx, inputs, block.id)
+    const messages = this.buildMessages(inputs)
 
     const providerRequest = this.buildProviderRequest({
       ctx,
@@ -53,18 +52,7 @@ export class AgentBlockHandler implements BlockHandler {
       streaming: streamingConfig.shouldUseStreaming ?? false,
     })
 
-    const result = await this.executeProviderRequest(
-      ctx,
-      providerRequest,
-      block,
-      responseFormat,
-      inputs
-    )
-
-    // Auto-persist response to memory if configured
-    await this.persistResponseToMemory(ctx, inputs, result, block.id)
-
-    return result
+    return this.executeProviderRequest(ctx, providerRequest, block, responseFormat)
   }
 
   private parseResponseFormat(responseFormat?: string | object): any {
@@ -336,80 +324,25 @@ export class AgentBlockHandler implements BlockHandler {
     return { shouldUseStreaming, isBlockSelectedForOutput, hasOutgoingConnections }
   }
 
-  private async buildMessages(
-    ctx: ExecutionContext,
-    inputs: AgentInputs,
-    blockId: string
-  ): Promise<Message[] | undefined> {
-    const messages: Message[] = []
-
-    // 1. Fetch memory history if configured (industry standard: chronological order)
-    if (inputs.memoryType && inputs.memoryType !== 'none') {
-      const memoryMessages = await memoryService.fetchMemoryMessages(ctx, inputs, blockId)
-      messages.push(...memoryMessages)
+  private buildMessages(inputs: AgentInputs): Message[] | undefined {
+    if (!inputs.memories && !(inputs.systemPrompt && inputs.userPrompt)) {
+      return undefined
     }
 
-    // 2. Process legacy memories (backward compatibility - from Memory block)
+    const messages: Message[] = []
+
     if (inputs.memories) {
       messages.push(...this.processMemories(inputs.memories))
     }
 
-    // 3. Add messages array (new approach - from messages-input subblock)
-    if (inputs.messages && Array.isArray(inputs.messages)) {
-      const validMessages = inputs.messages.filter(
-        (msg) =>
-          msg &&
-          typeof msg === 'object' &&
-          'role' in msg &&
-          'content' in msg &&
-          ['system', 'user', 'assistant'].includes(msg.role)
-      )
-      messages.push(...validMessages)
-    }
-
-    // Warn if using both new and legacy input formats
-    if (
-      inputs.messages &&
-      inputs.messages.length > 0 &&
-      (inputs.systemPrompt || inputs.userPrompt)
-    ) {
-      logger.warn('Agent block using both messages array and legacy prompts', {
-        hasMessages: true,
-        hasSystemPrompt: !!inputs.systemPrompt,
-        hasUserPrompt: !!inputs.userPrompt,
-      })
-    }
-
-    // 4. Handle legacy systemPrompt (backward compatibility)
-    // Only add if no system message exists yet
-    if (inputs.systemPrompt && !messages.some((m) => m.role === 'system')) {
+    if (inputs.systemPrompt) {
       this.addSystemPrompt(messages, inputs.systemPrompt)
     }
 
-    // 5. Handle legacy userPrompt (backward compatibility)
     if (inputs.userPrompt) {
       this.addUserPrompt(messages, inputs.userPrompt)
     }
 
-    // 6. Persist user message(s) to memory if configured
-    // This ensures conversation history is complete before agent execution
-    if (inputs.memoryType && inputs.memoryType !== 'none' && messages.length > 0) {
-      // Find new user messages that need to be persisted
-      // (messages added via messages array or userPrompt)
-      const userMessages = messages.filter((m) => m.role === 'user')
-      const lastUserMessage = userMessages[userMessages.length - 1]
-
-      // Only persist if there's a user message AND it's from userPrompt or messages input
-      // (not from memory history which was already persisted)
-      if (
-        lastUserMessage &&
-        (inputs.userPrompt || (inputs.messages && inputs.messages.length > 0))
-      ) {
-        await memoryService.persistUserMessage(ctx, inputs, lastUserMessage, blockId)
-      }
-    }
-
-    // Return messages or undefined if empty (maintains API compatibility)
     return messages.length > 0 ? messages : undefined
   }
 
@@ -449,10 +382,6 @@ export class AgentBlockHandler implements BlockHandler {
     return messages
   }
 
-  /**
-   * Ensures system message is at position 0 (industry standard)
-   * Preserves existing system message if already at position 0, otherwise adds/moves it
-   */
   private addSystemPrompt(messages: Message[], systemPrompt: any) {
     let content: string
 
@@ -466,31 +395,17 @@ export class AgentBlockHandler implements BlockHandler {
       }
     }
 
-    // Find first system message
-    const firstSystemIndex = messages.findIndex((msg) => msg.role === 'system')
+    const systemMessages = messages.filter((msg) => msg.role === 'system')
 
-    if (firstSystemIndex === -1) {
-      // No system message exists - add at position 0
-      messages.unshift({ role: 'system', content })
-    } else if (firstSystemIndex === 0) {
-      // System message already at position 0 - replace it
-      // Explicit systemPrompt parameter takes precedence over memory/messages
-      messages[0] = { role: 'system', content }
-    } else {
-      // System message exists but not at position 0 - move it to position 0
-      // and update with new content
-      messages.splice(firstSystemIndex, 1)
-      messages.unshift({ role: 'system', content })
-    }
-
-    // Remove any additional system messages (keep only the first one)
-    for (let i = messages.length - 1; i >= 1; i--) {
-      if (messages[i].role === 'system') {
-        messages.splice(i, 1)
-        logger.warn('Removed duplicate system message from conversation history', {
-          position: i,
-        })
+    if (systemMessages.length > 0) {
+      messages.splice(0, 0, { role: 'system', content })
+      for (let i = messages.length - 1; i >= 1; i--) {
+        if (messages[i].role === 'system') {
+          messages.splice(i, 1)
+        }
       }
+    } else {
+      messages.splice(0, 0, { role: 'system', content })
     }
   }
 
@@ -569,8 +484,7 @@ export class AgentBlockHandler implements BlockHandler {
     ctx: ExecutionContext,
     providerRequest: any,
     block: SerializedBlock,
-    responseFormat: any,
-    inputs: AgentInputs
+    responseFormat: any
   ): Promise<BlockOutput | StreamingExecution> {
     const providerId = providerRequest.provider
     const model = providerRequest.model
@@ -590,14 +504,7 @@ export class AgentBlockHandler implements BlockHandler {
           providerStartTime
         )
       }
-      return this.executeBrowserSide(
-        ctx,
-        providerRequest,
-        block,
-        responseFormat,
-        providerStartTime,
-        inputs
-      )
+      return this.executeBrowserSide(ctx, providerRequest, block, responseFormat, providerStartTime)
     } catch (error) {
       this.handleExecutionError(error, providerStartTime, providerId, model, ctx, block)
       throw error
@@ -647,8 +554,7 @@ export class AgentBlockHandler implements BlockHandler {
     providerRequest: any,
     block: SerializedBlock,
     responseFormat: any,
-    providerStartTime: number,
-    inputs: AgentInputs
+    providerStartTime: number
   ) {
     const url = buildAPIUrl('/api/providers')
     const response = await fetch(url.toString(), {
@@ -674,7 +580,7 @@ export class AgentBlockHandler implements BlockHandler {
 
     const contentType = response.headers.get('Content-Type')
     if (contentType?.includes(HTTP.CONTENT_TYPE.EVENT_STREAM)) {
-      return this.handleStreamingResponse(response, block, ctx, inputs)
+      return this.handleStreamingResponse(response, block)
     }
 
     const result = await response.json()
@@ -683,29 +589,13 @@ export class AgentBlockHandler implements BlockHandler {
 
   private async handleStreamingResponse(
     response: Response,
-    block: SerializedBlock,
-    ctx?: ExecutionContext,
-    inputs?: AgentInputs
+    block: SerializedBlock
   ): Promise<StreamingExecution> {
     const executionDataHeader = response.headers.get('X-Execution-Data')
 
     if (executionDataHeader) {
       try {
         const executionData = JSON.parse(executionDataHeader)
-
-        // If execution data contains full content, persist to memory
-        if (ctx && inputs && executionData.output?.content) {
-          const assistantMessage: Message = {
-            role: 'assistant',
-            content: executionData.output.content,
-          }
-          // Fire and forget - don't await
-          memoryService
-            .persistMemoryMessage(ctx, inputs, assistantMessage, block.id)
-            .catch((error) =>
-              logger.error('Failed to persist streaming response to memory:', error)
-            )
-        }
 
         return {
           stream: response.body!,
@@ -803,49 +693,6 @@ export class AgentBlockHandler implements BlockHandler {
     }
     if (error.message.includes('ENOTFOUND') || error.message.includes('ECONNREFUSED')) {
       throw new Error('Unable to connect to server - DNS or connection issue')
-    }
-  }
-
-  private async persistResponseToMemory(
-    ctx: ExecutionContext,
-    inputs: AgentInputs,
-    result: BlockOutput | StreamingExecution,
-    blockId: string
-  ): Promise<void> {
-    // Only persist if memoryType is configured
-    if (!inputs.memoryType || inputs.memoryType === 'none') {
-      return
-    }
-
-    try {
-      // Don't persist streaming responses here - they're handled separately
-      if (this.isStreamingExecution(result)) {
-        return
-      }
-
-      // Extract content from regular response
-      const blockOutput = result as any
-      const content = blockOutput?.content
-
-      if (!content || typeof content !== 'string') {
-        return
-      }
-
-      const assistantMessage: Message = {
-        role: 'assistant',
-        content,
-      }
-
-      await memoryService.persistMemoryMessage(ctx, inputs, assistantMessage, blockId)
-
-      logger.debug('Persisted assistant response to memory', {
-        workflowId: ctx.workflowId,
-        memoryType: inputs.memoryType,
-        conversationId: inputs.conversationId,
-      })
-    } catch (error) {
-      logger.error('Failed to persist response to memory:', error)
-      // Don't throw - memory persistence failure shouldn't break workflow execution
     }
   }
 

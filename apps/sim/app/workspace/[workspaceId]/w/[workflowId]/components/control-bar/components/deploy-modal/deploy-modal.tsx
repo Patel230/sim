@@ -3,17 +3,21 @@
 import { useEffect, useRef, useState } from 'react'
 import { Loader2, MoreVertical, X } from 'lucide-react'
 import {
-  Badge,
   Button,
-  Popover,
-  PopoverContent,
-  PopoverItem,
-  PopoverTrigger,
-} from '@/components/emcn'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui'
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui'
 import { getEnv } from '@/lib/env'
 import { createLogger } from '@/lib/logs/console/logger'
+import { cn } from '@/lib/utils'
 import type { WorkflowDeploymentVersionResponse } from '@/lib/workflows/db-helpers'
+import { getInputFormatExample as getInputFormatExampleUtil } from '@/lib/workflows/deployment-utils'
 import { resolveStartCandidates, StartBlockPath } from '@/lib/workflows/triggers'
 import {
   DeploymentInfo,
@@ -112,117 +116,7 @@ export function DeployModal({
     workflowWorkspaceId ? 'YOUR_WORKSPACE_API_KEY' : 'YOUR_PERSONAL_API_KEY'
 
   const getInputFormatExample = (includeStreaming = false) => {
-    let inputFormatExample = ''
-    try {
-      const blocks = Object.values(useWorkflowStore.getState().blocks)
-      const candidates = resolveStartCandidates(useWorkflowStore.getState().blocks, {
-        execution: 'api',
-      })
-
-      const targetCandidate =
-        candidates.find((candidate) => candidate.path === StartBlockPath.UNIFIED) ||
-        candidates.find((candidate) => candidate.path === StartBlockPath.SPLIT_API) ||
-        candidates.find((candidate) => candidate.path === StartBlockPath.SPLIT_INPUT) ||
-        candidates.find((candidate) => candidate.path === StartBlockPath.LEGACY_STARTER)
-
-      const targetBlock = targetCandidate?.block
-
-      if (targetBlock) {
-        const inputFormat = useSubBlockStore.getState().getValue(targetBlock.id, 'inputFormat')
-
-        const exampleData: Record<string, any> = {}
-
-        if (inputFormat && Array.isArray(inputFormat) && inputFormat.length > 0) {
-          inputFormat.forEach((field: any) => {
-            if (field.name) {
-              switch (field.type) {
-                case 'string':
-                  exampleData[field.name] = 'example'
-                  break
-                case 'number':
-                  exampleData[field.name] = 42
-                  break
-                case 'boolean':
-                  exampleData[field.name] = true
-                  break
-                case 'object':
-                  exampleData[field.name] = { key: 'value' }
-                  break
-                case 'array':
-                  exampleData[field.name] = [1, 2, 3]
-                  break
-                case 'files':
-                  exampleData[field.name] = [
-                    {
-                      data: 'data:application/pdf;base64,...',
-                      type: 'file',
-                      name: 'document.pdf',
-                      mime: 'application/pdf',
-                    },
-                  ]
-                  break
-              }
-            }
-          })
-        }
-
-        // Add streaming parameters if enabled and outputs are selected
-        if (includeStreaming && selectedStreamingOutputs.length > 0) {
-          exampleData.stream = true
-          // Convert blockId_attribute format to blockName.attribute format for display
-          const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i
-
-          const convertedOutputs = selectedStreamingOutputs
-            .map((outputId) => {
-              // If it starts with a UUID, convert to blockName.attribute format
-              if (UUID_REGEX.test(outputId)) {
-                const underscoreIndex = outputId.indexOf('_')
-                if (underscoreIndex === -1) return null
-
-                const blockId = outputId.substring(0, underscoreIndex)
-                const attribute = outputId.substring(underscoreIndex + 1)
-
-                // Find the block by ID and get its name
-                const block = blocks.find((b) => b.id === blockId)
-                if (block?.name) {
-                  // Normalize block name: lowercase and remove spaces
-                  const normalizedBlockName = block.name.toLowerCase().replace(/\s+/g, '')
-                  return `${normalizedBlockName}.${attribute}`
-                }
-                // Block not found (deleted), return null to filter out
-                return null
-              }
-
-              // Already in blockName.attribute format, verify the block exists
-              const parts = outputId.split('.')
-              if (parts.length >= 2) {
-                const blockName = parts[0]
-                // Check if a block with this name exists
-                const block = blocks.find(
-                  (b) => b.name?.toLowerCase().replace(/\s+/g, '') === blockName.toLowerCase()
-                )
-                if (!block) {
-                  // Block not found (deleted), return null to filter out
-                  return null
-                }
-              }
-
-              return outputId
-            })
-            .filter((output): output is string => output !== null)
-
-          exampleData.selectedOutputs = convertedOutputs
-        }
-
-        if (Object.keys(exampleData).length > 0) {
-          inputFormatExample = ` -d '${JSON.stringify(exampleData)}'`
-        }
-      }
-    } catch (error) {
-      logger.error('Error generating input format example:', error)
-    }
-
-    return inputFormatExample
+    return getInputFormatExampleUtil(includeStreaming, selectedStreamingOutputs)
   }
 
   const fetchChatDeploymentInfo = async () => {
@@ -655,14 +549,19 @@ export function DeployModal({
               <div className='flex items-center gap-2'>
                 <DialogTitle className='font-medium text-lg'>Deploy Workflow</DialogTitle>
                 {needsRedeployment && versions.length > 0 && versionToActivate === null && (
-                  <Badge variant='default'>
+                  <span className='inline-flex items-center rounded-md bg-purple-500/10 px-2 py-1 font-medium text-purple-600 text-xs dark:text-purple-400'>
                     {versions.find((v) => v.isActive)?.name ||
                       `v${versions.find((v) => v.isActive)?.version}`}{' '}
                     active
-                  </Badge>
+                  </span>
                 )}
               </div>
-              <Button variant='ghost' className='h-8 w-8 p-0' onClick={handleCloseModal}>
+              <Button
+                variant='ghost'
+                size='icon'
+                className='h-8 w-8 p-0'
+                onClick={handleCloseModal}
+              >
                 <X className='h-4 w-4' />
                 <span className='sr-only'>Close</span>
               </Button>
@@ -672,30 +571,46 @@ export function DeployModal({
           <div className='flex flex-1 flex-col overflow-hidden'>
             <div className='flex h-14 flex-none items-center border-b px-6'>
               <div className='flex gap-2'>
-                <Button
-                  variant={activeTab === 'api' ? 'active' : 'default'}
+                <button
                   onClick={() => setActiveTab('api')}
+                  className={`rounded-md px-3 py-1 text-sm transition-colors ${
+                    activeTab === 'api'
+                      ? 'bg-accent text-foreground'
+                      : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
+                  }`}
                 >
                   API
-                </Button>
-                <Button
-                  variant={activeTab === 'chat' ? 'active' : 'default'}
+                </button>
+                <button
                   onClick={() => setActiveTab('chat')}
+                  className={`rounded-md px-3 py-1 text-sm transition-colors ${
+                    activeTab === 'chat'
+                      ? 'bg-accent text-foreground'
+                      : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
+                  }`}
                 >
                   Chat
-                </Button>
-                <Button
-                  variant={activeTab === 'versions' ? 'active' : 'default'}
+                </button>
+                <button
                   onClick={() => setActiveTab('versions')}
+                  className={`rounded-md px-3 py-1 text-sm transition-colors ${
+                    activeTab === 'versions'
+                      ? 'bg-accent text-foreground'
+                      : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
+                  }`}
                 >
                   Versions
-                </Button>
-                <Button
-                  variant={activeTab === 'template' ? 'active' : 'default'}
+                </button>
+                <button
                   onClick={() => setActiveTab('template')}
+                  className={`rounded-md px-3 py-1 text-sm transition-colors ${
+                    activeTab === 'template'
+                      ? 'bg-accent text-foreground'
+                      : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
+                  }`}
                 >
                   Template
-                </Button>
+                </button>
               </div>
             </div>
 
@@ -719,7 +634,17 @@ export function DeployModal({
                           } to production.`}
                         </div>
                         <div className='flex gap-2'>
-                          <Button variant='primary' onClick={onDeploy} disabled={isSubmitting}>
+                          <Button
+                            onClick={onDeploy}
+                            disabled={isSubmitting}
+                            className={cn(
+                              'gap-2 font-medium',
+                              'bg-[var(--brand-primary-hover-hex)] hover:bg-[var(--brand-primary-hover-hex)]',
+                              'shadow-[0_0_0_0_var(--brand-primary-hover-hex)] hover:shadow-[0_0_0_4px_rgba(127,47,255,0.15)]',
+                              'text-white transition-all duration-200',
+                              'disabled:opacity-50 disabled:hover:bg-[var(--brand-primary-hover-hex)] disabled:hover:shadow-none'
+                            )}
+                          >
                             {isSubmitting ? (
                               <>
                                 <Loader2 className='mr-1.5 h-3.5 w-3.5 animate-spin' />
@@ -852,34 +777,38 @@ export function DeployModal({
                                       className='px-4 py-2.5'
                                       onClick={(e) => e.stopPropagation()}
                                     >
-                                      <Popover
+                                      <DropdownMenu
                                         open={openDropdown === v.version}
                                         onOpenChange={(open) =>
                                           setOpenDropdown(open ? v.version : null)
                                         }
                                       >
-                                        <PopoverTrigger asChild>
+                                        <DropdownMenuTrigger asChild>
                                           <Button
                                             variant='ghost'
+                                            size='icon'
+                                            className='h-8 w-8'
                                             disabled={activatingVersion === v.version}
-                                            className='h-8 w-8 p-0'
                                           >
                                             <MoreVertical className='h-4 w-4' />
                                           </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent align='end'>
-                                          <PopoverItem
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent
+                                          align='end'
+                                          onCloseAutoFocus={(event) => event.preventDefault()}
+                                        >
+                                          <DropdownMenuItem
                                             onClick={() => openVersionPreview(v.version)}
                                           >
                                             {v.isActive ? 'View Active' : 'Inspect'}
-                                          </PopoverItem>
-                                          <PopoverItem
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem
                                             onClick={() => handleStartRename(v.version, v.name)}
                                           >
                                             Rename
-                                          </PopoverItem>
-                                        </PopoverContent>
-                                      </Popover>
+                                          </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
                                     </td>
                                   </tr>
                                 ))}
@@ -897,6 +826,7 @@ export function DeployModal({
                             <div className='flex gap-2'>
                               <Button
                                 variant='outline'
+                                size='sm'
                                 onClick={() => setCurrentPage(currentPage - 1)}
                                 disabled={currentPage === 1}
                               >
@@ -904,6 +834,7 @@ export function DeployModal({
                               </Button>
                               <Button
                                 variant='outline'
+                                size='sm'
                                 onClick={() => setCurrentPage(currentPage + 1)}
                                 disabled={currentPage * itemsPerPage >= versions.length}
                               >
@@ -961,16 +892,28 @@ export function DeployModal({
                       }
                     }}
                     disabled={chatSubmitting}
-                    className='bg-red-500 text-white hover:bg-red-600'
+                    className={cn(
+                      'gap-2 font-medium',
+                      'bg-red-500 hover:bg-red-600',
+                      'shadow-[0_0_0_0_rgb(239,68,68)] hover:shadow-[0_0_0_4px_rgba(239,68,68,0.15)]',
+                      'text-white transition-all duration-200',
+                      'disabled:opacity-50 disabled:hover:bg-red-500 disabled:hover:shadow-none'
+                    )}
                   >
                     Delete
                   </Button>
                 )}
                 <Button
                   type='button'
-                  variant='primary'
                   onClick={handleChatFormSubmit}
                   disabled={chatSubmitting || !isChatFormValid}
+                  className={cn(
+                    'gap-2 font-medium',
+                    'bg-[var(--brand-primary-hover-hex)] hover:bg-[var(--brand-primary-hover-hex)]',
+                    'shadow-[0_0_0_0_var(--brand-primary-hover-hex)] hover:shadow-[0_0_0_4px_rgba(127,47,255,0.15)]',
+                    'text-white transition-all duration-200',
+                    'disabled:opacity-50 disabled:hover:bg-[var(--brand-primary-hover-hex)] disabled:hover:shadow-none'
+                  )}
                 >
                   {chatSubmitting ? (
                     <>

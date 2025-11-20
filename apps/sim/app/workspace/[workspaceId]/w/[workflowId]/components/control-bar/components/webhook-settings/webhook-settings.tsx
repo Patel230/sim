@@ -14,17 +14,16 @@ import {
   Search,
   Trash2,
 } from 'lucide-react'
+import { Tooltip } from '@/components/emcn'
 import {
-  Button as EmcnButton,
-  Modal,
-  ModalContent,
-  ModalDescription,
-  ModalFooter,
-  ModalHeader,
-  ModalTitle,
-  Tooltip,
-} from '@/components/emcn'
-import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
   Button,
   Dialog,
   DialogContent,
@@ -1163,36 +1162,29 @@ export function WebhookSettings({ workflowId, open, onOpenChange }: WebhookSetti
       </DialogContent>
 
       {/* Delete Confirmation Dialog */}
-      <Modal open={showDeleteDialog} onOpenChange={handleDeleteDialogClose}>
-        <ModalContent>
-          <ModalHeader>
-            <ModalTitle>Delete webhook?</ModalTitle>
-            <ModalDescription>
+      <AlertDialog open={showDeleteDialog} onOpenChange={handleDeleteDialogClose}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete webhook?</AlertDialogTitle>
+            <AlertDialogDescription>
               This will permanently remove the webhook configuration and stop all notifications.{' '}
-              <span className='text-[var(--text-error)] dark:text-[var(--text-error)]'>
-                This action cannot be undone.
-              </span>
-            </ModalDescription>
-          </ModalHeader>
-          <ModalFooter>
-            <EmcnButton
-              variant='outline'
-              className='h-[32px] px-[12px]'
-              disabled={isDeleting}
-              onClick={handleDeleteDialogClose}
-            >
+              <span className='text-red-500 dark:text-red-500'>This action cannot be undone.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className='flex'>
+            <AlertDialogCancel className='h-9 w-full rounded-[8px]' disabled={isDeleting}>
               Cancel
-            </EmcnButton>
-            <EmcnButton
+            </AlertDialogCancel>
+            <AlertDialogAction
               onClick={confirmDeleteWebhook}
               disabled={isDeleting}
-              className='h-[32px] bg-[var(--text-error)] px-[12px] text-[var(--white)] hover:bg-[var(--text-error)] hover:text-[var(--white)] dark:bg-[var(--text-error)] dark:text-[var(--white)] hover:dark:bg-[var(--text-error)] dark:hover:text-[var(--white)]'
+              className='h-9 w-full rounded-[8px] bg-red-500 text-white transition-all duration-200 hover:bg-red-600 dark:bg-red-500 dark:hover:bg-red-600'
             >
               {isDeleting ? 'Deleting...' : 'Delete'}
-            </EmcnButton>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   )
 }

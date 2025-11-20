@@ -521,6 +521,7 @@ export const createParallelExecutionState = (options?: {
   completedExecutions?: number
   executionResults?: Map<string, any>
   activeIterations?: Set<number>
+  currentIteration?: number
   parallelType?: 'count' | 'collection'
 }) => ({
   parallelCount: options?.parallelCount ?? 3,
@@ -529,6 +530,7 @@ export const createParallelExecutionState = (options?: {
   completedExecutions: options?.completedExecutions ?? 0,
   executionResults: options?.executionResults ?? new Map<string, any>(),
   activeIterations: options?.activeIterations ?? new Set<number>(),
+  currentIteration: options?.currentIteration ?? 1,
   parallelType: options?.parallelType,
 })
 
@@ -553,7 +555,7 @@ export const createParallelManagerMock = (options?: {
             }
 
             const parallelState = context.parallelExecutions?.get(parallelId)
-            if (!parallelState) {
+            if (!parallelState || parallelState.currentIteration === 0) {
               continue
             }
 
@@ -665,6 +667,7 @@ export const createParallelBlockHandler = vi.fn().mockImplementation(() => {
           completedExecutions: 0,
           executionResults: new Map(),
           activeIterations: new Set(),
+          currentIteration: 1,
         }
         context.parallelExecutions.set(parallelId, parallelState)
 

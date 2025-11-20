@@ -150,6 +150,7 @@ export function useDeleteFolderMutation() {
     },
     onSuccess: async (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: folderKeys.list(variables.workspaceId) })
+      // Invalidate workflow queries to reload workflows after folder changes
       queryClient.invalidateQueries({ queryKey: workflowKeys.list(variables.workspaceId) })
     },
   })
@@ -180,6 +181,7 @@ export function useDuplicateFolderMutation() {
     },
     onSuccess: async (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: folderKeys.list(variables.workspaceId) })
+      // Invalidate workflow queries to reload workflows after folder changes
       queryClient.invalidateQueries({ queryKey: workflowKeys.list(variables.workspaceId) })
     },
   })

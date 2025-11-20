@@ -1,15 +1,15 @@
 'use client'
 
 import { Check } from 'lucide-react'
+import { Button } from '@/components/emcn/components/button/button'
 import {
-  Button,
-  Modal,
-  ModalContent,
-  ModalDescription,
-  ModalFooter,
-  ModalHeader,
-  ModalTitle,
-} from '@/components/emcn'
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { client } from '@/lib/auth-client'
 import { createLogger } from '@/lib/logs/console/logger'
 import {
@@ -298,15 +298,15 @@ export function OAuthRequiredModal({
   }
 
   return (
-    <Modal open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <ModalContent className='sm:max-w-md'>
-        <ModalHeader>
-          <ModalTitle>Additional Access Required</ModalTitle>
-          <ModalDescription>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className='sm:max-w-md'>
+        <DialogHeader>
+          <DialogTitle>Additional Access Required</DialogTitle>
+          <DialogDescription>
             The "{toolName}" tool requires access to your {providerName} account to function
             properly.
-          </ModalDescription>
-        </ModalHeader>
+          </DialogDescription>
+        </DialogHeader>
         <div className='flex flex-col gap-4 py-4'>
           <div className='flex items-center gap-4'>
             <div className='rounded-full bg-muted p-2'>
@@ -345,20 +345,20 @@ export function OAuthRequiredModal({
             </div>
           )}
         </div>
-        <ModalFooter>
-          <Button variant='outline' onClick={onClose} className='h-[32px] px-[12px]'>
+        <DialogFooter className='flex flex-col gap-2 sm:flex-row'>
+          <Button variant='outline' onClick={onClose} className='sm:order-1'>
             Cancel
           </Button>
           <Button
             variant='primary'
             type='button'
             onClick={handleConnectDirectly}
-            className='h-[32px] px-[12px]'
+            className='sm:order-3'
           >
             Connect Now
           </Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

@@ -1,2 +1,2 @@
 export { usePanelResize } from './use-panel-resize'
-export { useUsageLimits } from './use-usage-limits'
+export { type UsageData, useUsageLimits } from './use-usage-limits'

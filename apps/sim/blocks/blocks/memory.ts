@@ -32,9 +32,9 @@ export const MemoryBlock: BlockConfig = {
     },
     {
       id: 'id',
-      title: 'Conversation ID',
+      title: 'ID',
       type: 'short-input',
-      placeholder: 'Enter conversation ID (e.g., user-123)',
+      placeholder: 'Enter memory identifier',
       condition: {
         field: 'operation',
         value: 'add',
@@ -42,81 +42,26 @@ export const MemoryBlock: BlockConfig = {
       required: true,
     },
     {
-      id: 'blockId',
-      title: 'Block ID',
+      id: 'id',
+      title: 'ID',
       type: 'short-input',
-      placeholder: 'Enter block ID (optional, defaults to current block)',
+      placeholder: 'Enter memory identifier to retrieve',
       condition: {
         field: 'operation',
-        value: 'add',
+        value: 'get',
       },
-      required: false,
+      required: true,
     },
     {
       id: 'id',
-      title: 'Conversation ID',
+      title: 'ID',
       type: 'short-input',
-      placeholder: 'Enter conversation ID (e.g., user-123)',
-      condition: {
-        field: 'operation',
-        value: 'get',
-      },
-      required: false,
-    },
-    {
-      id: 'blockId',
-      title: 'Block ID',
-      type: 'short-input',
-      placeholder: 'Enter block ID (optional)',
-      condition: {
-        field: 'operation',
-        value: 'get',
-      },
-      required: false,
-    },
-    {
-      id: 'blockName',
-      title: 'Block Name',
-      type: 'short-input',
-      placeholder: 'Enter block name (optional)',
-      condition: {
-        field: 'operation',
-        value: 'get',
-      },
-      required: false,
-    },
-    {
-      id: 'id',
-      title: 'Conversation ID',
-      type: 'short-input',
-      placeholder: 'Enter conversation ID (e.g., user-123)',
+      placeholder: 'Enter memory identifier to delete',
       condition: {
         field: 'operation',
         value: 'delete',
       },
-      required: false,
-    },
-    {
-      id: 'blockId',
-      title: 'Block ID',
-      type: 'short-input',
-      placeholder: 'Enter block ID (optional)',
-      condition: {
-        field: 'operation',
-        value: 'delete',
-      },
-      required: false,
-    },
-    {
-      id: 'blockName',
-      title: 'Block Name',
-      type: 'short-input',
-      placeholder: 'Enter block name (optional)',
-      condition: {
-        field: 'operation',
-        value: 'delete',
-      },
-      required: false,
+      required: true,
     },
     {
       id: 'role',
@@ -165,18 +110,24 @@ export const MemoryBlock: BlockConfig = {
         }
       },
       params: (params: Record<string, any>) => {
+        // Create detailed error information for any missing required fields
         const errors: string[] = []
 
         if (!params.operation) {
           errors.push('Operation is required')
         }
 
-        const conversationId = params.id || params.conversationId
+        if (
+          params.operation === 'add' ||
+          params.operation === 'get' ||
+          params.operation === 'delete'
+        ) {
+          if (!params.id) {
+            errors.push(`Memory ID is required for ${params.operation} operation`)
+          }
+        }
 
         if (params.operation === 'add') {
-          if (!conversationId) {
-            errors.push('Conversation ID is required for add operation')
-          }
           if (!params.role) {
             errors.push('Role is required for agent memory')
           }
@@ -185,60 +136,51 @@ export const MemoryBlock: BlockConfig = {
           }
         }
 
-        if (params.operation === 'get' || params.operation === 'delete') {
-          if (!conversationId && !params.blockId && !params.blockName) {
-            errors.push(
-              `At least one of ID, blockId, or blockName is required for ${params.operation} operation`
-            )
-          }
-        }
-
+        // Throw error if any required fields are missing
         if (errors.length > 0) {
           throw new Error(`Memory Block Error: ${errors.join(', ')}`)
         }
 
+        // Base result object
         const baseResult: Record<string, any> = {}
 
+        // For add operation
         if (params.operation === 'add') {
           const result: Record<string, any> = {
             ...baseResult,
-            conversationId: conversationId,
+            id: params.id,
+            type: 'agent', // Always agent type
             role: params.role,
             content: params.content,
           }
-          if (params.blockId) {
-            result.blockId = params.blockId
-          }
 
           return result
         }
 
+        // For get operation
         if (params.operation === 'get') {
-          const result: Record<string, any> = { ...baseResult }
-          if (conversationId) result.conversationId = conversationId
-          if (params.blockId) result.blockId = params.blockId
-          if (params.blockName) result.blockName = params.blockName
-          return result
+          return {
+            ...baseResult,
+            id: params.id,
+          }
         }
 
+        // For delete operation
         if (params.operation === 'delete') {
-          const result: Record<string, any> = { ...baseResult }
-          if (conversationId) result.conversationId = conversationId
-          if (params.blockId) result.blockId = params.blockId
-          if (params.blockName) result.blockName = params.blockName
-          return result
+          return {
+            ...baseResult,
+            id: params.id,
+          }
         }
 
+        // For getAll operation
         return baseResult
       },
     },
   },
   inputs: {
     operation: { type: 'string', description: 'Operation to perform' },
-    id: { type: 'string', description: 'Memory identifier (for add operation)' },
-    conversationId: { type: 'string', description: 'Conversation identifier' },
-    blockId: { type: 'string', description: 'Block identifier' },
-    blockName: { type: 'string', description: 'Block name' },
+    id: { type: 'string', description: 'Memory identifier' },
     role: { type: 'string', description: 'Agent role' },
     content: { type: 'string', description: 'Memory content' },
   },

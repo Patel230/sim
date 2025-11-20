@@ -1,16 +1,13 @@
 import { useEffect, useState } from 'react'
+import { Button, Combobox, type ComboboxOption, Tooltip } from '@/components/emcn'
 import {
-  Button,
-  Combobox,
-  type ComboboxOption,
-  Modal,
-  ModalContent,
-  ModalDescription,
-  ModalFooter,
-  ModalHeader,
-  ModalTitle,
-  Tooltip,
-} from '@/components/emcn'
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { DEFAULT_TEAM_TIER_COST_LIMIT } from '@/lib/billing/constants'
 import { env } from '@/lib/env'
@@ -64,12 +61,12 @@ export function TeamSeats({
   }))
 
   return (
-    <Modal open={open} onOpenChange={onOpenChange}>
-      <ModalContent>
-        <ModalHeader>
-          <ModalTitle>{title}</ModalTitle>
-          <ModalDescription>{description}</ModalDescription>
-        </ModalHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
 
         <div className='py-4'>
           <Label htmlFor='seats'>Number of seats</Label>
@@ -105,13 +102,8 @@ export function TeamSeats({
           )}
         </div>
 
-        <ModalFooter>
-          <Button
-            variant='outline'
-            onClick={() => onOpenChange(false)}
-            disabled={isLoading}
-            className='h-[32px] px-[12px]'
-          >
+        <DialogFooter>
+          <Button variant='outline' onClick={() => onOpenChange(false)} disabled={isLoading}>
             Cancel
           </Button>
 
@@ -126,7 +118,6 @@ export function TeamSeats({
                     (showCostBreakdown && selectedSeats === currentSeats) ||
                     isCancelledAtPeriodEnd
                   }
-                  className='h-[32px] px-[12px]'
                 >
                   {isLoading ? (
                     <div className='flex items-center space-x-2'>
@@ -148,8 +139,8 @@ export function TeamSeats({
               </Tooltip.Content>
             )}
           </Tooltip.Root>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

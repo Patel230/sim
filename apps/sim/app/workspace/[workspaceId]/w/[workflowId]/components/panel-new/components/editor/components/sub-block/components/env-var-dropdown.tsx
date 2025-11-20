@@ -289,7 +289,6 @@ export const EnvVarDropdown: React.FC<EnvVarDropdownProps> = ({
         side={side}
         align='start'
         collisionPadding={6}
-        style={{ zIndex: 100000000 }}
         onOpenAutoFocus={(e) => e.preventDefault()}
         onCloseAutoFocus={(e) => e.preventDefault()}
       >

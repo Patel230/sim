@@ -76,6 +76,7 @@ export function useUpdateWorkspaceSettings() {
       return response.json()
     },
     onSuccess: (_data, variables) => {
+      // Invalidate workspace settings
       queryClient.invalidateQueries({
         queryKey: workspaceKeys.settings(variables.workspaceId),
       })

@@ -74,6 +74,7 @@ async function fetchOrganizationSubscription(orgId: string) {
     return null
   }
 
+  // Pass query parameter to filter by referenceId (matches old store behavior)
   const response = await client.subscription.list({
     query: { referenceId: orgId },
   })
@@ -83,6 +84,7 @@ async function fetchOrganizationSubscription(orgId: string) {
     return null
   }
 
+  // Find active team or enterprise subscription (same logic as old store)
   const teamSubscription = response.data?.find(
     (sub: any) => sub.status === 'active' && sub.plan === 'team'
   )
@@ -91,6 +93,7 @@ async function fetchOrganizationSubscription(orgId: string) {
   )
   const activeSubscription = enterpriseSubscription || teamSubscription
 
+  // React Query requires non-undefined return values, use null instead
   return activeSubscription || null
 }
 
@@ -102,7 +105,7 @@ export function useOrganizationSubscription(orgId: string) {
     queryKey: organizationKeys.subscription(orgId),
     queryFn: () => fetchOrganizationSubscription(orgId),
     enabled: !!orgId,
-    retry: false,
+    retry: false, // Don't retry when no organization exists
     staleTime: 30 * 1000,
     placeholderData: keepPreviousData,
   })
@@ -114,6 +117,7 @@ export function useOrganizationSubscription(orgId: string) {
 async function fetchOrganizationBilling(orgId: string) {
   const response = await fetch(`/api/billing?context=organization&id=${orgId}`)
 
+  // Treat 404 as "no billing data available"
   if (response.status === 404) {
     return null
   }
@@ -132,7 +136,7 @@ export function useOrganizationBilling(orgId: string) {
     queryKey: organizationKeys.billing(orgId),
     queryFn: () => fetchOrganizationBilling(orgId),
     enabled: !!orgId,
-    retry: false,
+    retry: false, // Don't retry when no billing data exists
     staleTime: 30 * 1000,
     placeholderData: keepPreviousData,
   })
@@ -144,6 +148,7 @@ export function useOrganizationBilling(orgId: string) {
 async function fetchOrganizationMembers(orgId: string) {
   const response = await fetch(`/api/organizations/${orgId}/members?include=usage`)
 
+  // Treat 404 as "no members found"
   if (response.status === 404) {
     return { members: [] }
   }
@@ -164,88 +169,6 @@ export function useOrganizationMembers(orgId: string) {
     enabled: !!orgId,
     staleTime: 30 * 1000,
     placeholderData: keepPreviousData,
-  })
-}
-
-/**
- * Update organization usage limit mutation with optimistic updates
- */
-interface UpdateOrganizationUsageLimitParams {
-  organizationId: string
-  limit: number
-}
-
-export function useUpdateOrganizationUsageLimit() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async ({ organizationId, limit }: UpdateOrganizationUsageLimitParams) => {
-      const response = await fetch('/api/usage', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ context: 'organization', organizationId, limit }),
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || error.error || 'Failed to update usage limit')
-      }
-
-      return response.json()
-    },
-    onMutate: async ({ organizationId, limit }) => {
-      await queryClient.cancelQueries({ queryKey: organizationKeys.billing(organizationId) })
-      await queryClient.cancelQueries({ queryKey: organizationKeys.subscription(organizationId) })
-
-      const previousBillingData = queryClient.getQueryData(organizationKeys.billing(organizationId))
-      const previousSubscriptionData = queryClient.getQueryData(
-        organizationKeys.subscription(organizationId)
-      )
-
-      queryClient.setQueryData(organizationKeys.billing(organizationId), (old: any) => {
-        if (!old) return old
-        const currentUsage = old.data?.currentUsage || old.data?.usage?.current || 0
-        const newPercentUsed = limit > 0 ? (currentUsage / limit) * 100 : 0
-
-        return {
-          ...old,
-          data: {
-            ...old.data,
-            totalUsageLimit: limit,
-            usage: {
-              ...old.data?.usage,
-              limit,
-              percentUsed: newPercentUsed,
-            },
-            percentUsed: newPercentUsed,
-          },
-        }
-      })
-
-      return { previousBillingData, previousSubscriptionData, organizationId }
-    },
-    onError: (_err, _variables, context) => {
-      if (context?.previousBillingData && context?.organizationId) {
-        queryClient.setQueryData(
-          organizationKeys.billing(context.organizationId),
-          context.previousBillingData
-        )
-      }
-      if (context?.previousSubscriptionData && context?.organizationId) {
-        queryClient.setQueryData(
-          organizationKeys.subscription(context.organizationId),
-          context.previousSubscriptionData
-        )
-      }
-    },
-    onSettled: (_data, _error, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: organizationKeys.billing(variables.organizationId),
-      })
-      queryClient.invalidateQueries({
-        queryKey: organizationKeys.subscription(variables.organizationId),
-      })
-    },
   })
 }
 
@@ -280,9 +203,11 @@ export function useInviteMember() {
       return response.json()
     },
     onSuccess: (_data, variables) => {
+      // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: organizationKeys.detail(variables.orgId) })
       queryClient.invalidateQueries({ queryKey: organizationKeys.billing(variables.orgId) })
       queryClient.invalidateQueries({ queryKey: organizationKeys.memberUsage(variables.orgId) })
+      // Also refetch the org list to update counts
       queryClient.invalidateQueries({ queryKey: organizationKeys.lists() })
     },
   })
@@ -317,6 +242,7 @@ export function useRemoveMember() {
       return response.json()
     },
     onSuccess: (_data, variables) => {
+      // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: organizationKeys.detail(variables.orgId) })
       queryClient.invalidateQueries({ queryKey: organizationKeys.billing(variables.orgId) })
       queryClient.invalidateQueries({ queryKey: organizationKeys.memberUsage(variables.orgId) })
@@ -391,6 +317,7 @@ export function useUpdateSeats() {
       return response.data
     },
     onSuccess: (_data, variables) => {
+      // Invalidate all related queries
       queryClient.invalidateQueries({ queryKey: organizationKeys.detail(variables.orgId) })
       queryClient.invalidateQueries({ queryKey: organizationKeys.subscription(variables.orgId) })
       queryClient.invalidateQueries({ queryKey: organizationKeys.billing(variables.orgId) })
@@ -428,6 +355,7 @@ export function useUpdateOrganization() {
       return response.json()
     },
     onSuccess: (_data, variables) => {
+      // Invalidate organization details
       queryClient.invalidateQueries({ queryKey: organizationKeys.detail(variables.orgId) })
       queryClient.invalidateQueries({ queryKey: organizationKeys.lists() })
     },
@@ -456,6 +384,7 @@ export function useCreateOrganization() {
         throw new Error('Failed to create organization')
       }
 
+      // Set as active organization
       await client.organization.setActive({
         organizationId: response.data.id,
       })
@@ -463,6 +392,7 @@ export function useCreateOrganization() {
       return response.data
     },
     onSuccess: () => {
+      // Refetch all organizations
       queryClient.invalidateQueries({ queryKey: organizationKeys.all })
     },
   })

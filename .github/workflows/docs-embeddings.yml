@@ -24,19 +24,8 @@ jobs:
         with:
           node-version: latest
 
-      - name: Cache Bun dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.bun/install/cache
-            node_modules
-            **/node_modules
-          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-bun-
-
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: bun install
 
       - name: Process docs embeddings
         working-directory: ./apps/sim

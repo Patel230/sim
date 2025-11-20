@@ -84,10 +84,13 @@ export function useUpdateUserProfile() {
       return response.json()
     },
     onMutate: async (updates) => {
+      // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: userProfileKeys.profile() })
 
+      // Snapshot the previous value
       const previousProfile = queryClient.getQueryData<UserProfile>(userProfileKeys.profile())
 
+      // Optimistically update to the new value
       if (previousProfile) {
         queryClient.setQueryData<UserProfile>(userProfileKeys.profile(), {
           ...previousProfile,
@@ -99,12 +102,14 @@ export function useUpdateUserProfile() {
       return { previousProfile }
     },
     onError: (err, _variables, context) => {
+      // Rollback on error
       if (context?.previousProfile) {
         queryClient.setQueryData(userProfileKeys.profile(), context.previousProfile)
       }
       logger.error('Failed to update profile:', err)
     },
     onSuccess: () => {
+      // Invalidate to ensure we have the latest from server
       queryClient.invalidateQueries({ queryKey: userProfileKeys.profile() })
     },
   })

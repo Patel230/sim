@@ -1,14 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import {
-  Button,
-  Modal,
-  ModalContent,
-  ModalDescription,
-  ModalFooter,
-  ModalTitle,
-} from '@/components/emcn/components'
+import { Button } from '@/components/emcn/components'
 import { Trash } from '@/components/emcn/icons/trash'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { createLogger } from '@/lib/logs/console/logger'
 import { cn } from '@/lib/utils'
 import { useCollaborativeWorkflow } from '@/hooks/use-collaborative-workflow'
@@ -361,7 +364,7 @@ export function TriggerSave({
           onClick={handleSave}
           disabled={disabled || isProcessing}
           className={cn(
-            'h-[32px] flex-1 rounded-[8px] px-[12px] transition-all duration-200',
+            'h-9 flex-1 rounded-[8px] transition-all duration-200',
             saveStatus === 'saved' && 'bg-green-600 hover:bg-green-700',
             saveStatus === 'error' && 'bg-red-600 hover:bg-red-700'
           )}
@@ -382,7 +385,7 @@ export function TriggerSave({
             variant='default'
             onClick={handleDeleteClick}
             disabled={disabled || isProcessing}
-            className='h-[32px] rounded-[8px] px-[12px]'
+            className='h-9 rounded-[8px] px-3'
           >
             {deleteStatus === 'deleting' ? (
               <div className='h-4 w-4 animate-spin rounded-full border-[1.5px] border-current border-t-transparent' />
@@ -407,7 +410,7 @@ export function TriggerSave({
               variant='outline'
               onClick={generateTestUrl}
               disabled={isGeneratingTestUrl || isProcessing}
-              className='h-[32px] rounded-[8px] px-[12px]'
+              className='h-8 rounded-[8px]'
             >
               {isGeneratingTestUrl ? (
                 <>
@@ -451,31 +454,26 @@ export function TriggerSave({
         </div>
       )}
 
-      <Modal open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <ModalContent>
-          <ModalTitle>Delete trigger?</ModalTitle>
-          <ModalDescription>
-            Are you sure you want to delete this trigger configuration? This will remove the webhook
-            and stop all incoming triggers.{' '}
-            <span className='text-[var(--text-error)]'>This action cannot be undone.</span>
-          </ModalDescription>
-          <ModalFooter>
-            <Button
-              variant='outline'
-              onClick={() => setShowDeleteDialog(false)}
-              className='h-[32px] px-[12px]'
-            >
-              Cancel
-            </Button>
-            <Button
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Trigger Configuration</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this trigger configuration? This will remove the
+              webhook and stop all incoming triggers. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
               onClick={handleDeleteConfirm}
-              className='h-[32px] bg-[var(--text-error)] px-[12px] text-[var(--white)] hover:bg-[var(--text-error)] hover:text-[var(--white)] dark:bg-[var(--text-error)] dark:text-[var(--white)] hover:dark:bg-[var(--text-error)] dark:hover:text-[var(--white)]'
+              className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
             >
               Delete
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

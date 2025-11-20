@@ -107,7 +107,9 @@ export function useSavePersonalEnvironment() {
       return transformedVariables
     },
     onSuccess: () => {
+      // Invalidate personal environment queries
       queryClient.invalidateQueries({ queryKey: environmentKeys.personal() })
+      // Invalidate all workspace environments as they may have conflicts
       queryClient.invalidateQueries({ queryKey: environmentKeys.all })
     },
   })
@@ -140,9 +142,11 @@ export function useUpsertWorkspaceEnvironment() {
       return await response.json()
     },
     onSuccess: (_data, variables) => {
+      // Invalidate workspace environment
       queryClient.invalidateQueries({
         queryKey: environmentKeys.workspace(variables.workspaceId),
       })
+      // Invalidate personal environment as conflicts may have changed
       queryClient.invalidateQueries({ queryKey: environmentKeys.personal() })
     },
   })
@@ -175,9 +179,11 @@ export function useRemoveWorkspaceEnvironment() {
       return await response.json()
     },
     onSuccess: (_data, variables) => {
+      // Invalidate workspace environment
       queryClient.invalidateQueries({
         queryKey: environmentKeys.workspace(variables.workspaceId),
       })
+      // Invalidate personal environment as conflicts may have changed
       queryClient.invalidateQueries({ queryKey: environmentKeys.personal() })
     },
   })
